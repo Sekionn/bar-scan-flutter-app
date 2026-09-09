@@ -1,0 +1,1 @@
+# bar-scan-flutter-app
