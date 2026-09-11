@@ -1,15 +1,15 @@
 import '../models/scan_record.dart';
-import '../services/queue_api_service.dart';
+import '../services/product_queue_service.dart';
 import '../services/scan_database_service.dart';
 
 class ScanRepository {
   const ScanRepository({
     required this.databaseService,
-    required this.queueApiService,
+    required this.productQueueService,
   });
 
   final ScanDatabaseService databaseService;
-  final QueueApiService queueApiService;
+  final ProductQueueService productQueueService;
 
   Future<int> addScan(ScanRecord record) {
     return databaseService.insert(record);
@@ -30,7 +30,7 @@ class ScanRepository {
     var synced = 0;
 
     for (final record in records.reversed) {
-      await queueApiService.send(record);
+      await productQueueService.publishProductCreated(record);
       await databaseService.delete(record.id!);
       synced += 1;
       onProgress(synced, records.length);

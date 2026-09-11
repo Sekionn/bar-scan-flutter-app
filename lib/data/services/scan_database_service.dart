@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import '../models/scan_record.dart';
 
@@ -15,25 +17,51 @@ class ScanDatabaseService {
       return _database!;
     }
 
-    final databasePath = await getDatabasesPath();
-    final path = p.join(databasePath, 'barscan.sqlite');
-    _database = await openDatabase(
+    final factory = _databaseFactory;
+    final path = await _databasePath();
+    _database = await factory.openDatabase(
       path,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE scans (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            segment TEXT NOT NULL,
-            barcode TEXT NOT NULL,
-            entered_number TEXT NOT NULL,
-            created_at TEXT NOT NULL
-          )
-        ''');
-      },
+      options: OpenDatabaseOptions(
+        version: 2,
+        onCreate: (db, version) async {
+          await db.execute('''
+            CREATE TABLE scans (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id TEXT NOT NULL,
+              username TEXT NOT NULL,
+              segment TEXT NOT NULL,
+              barcode TEXT NOT NULL,
+              entered_number TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            )
+          ''');
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await db.execute(
+              "ALTER TABLE scans ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
+            );
+          }
+        },
+      ),
     );
     return _database!;
+  }
+
+  DatabaseFactory get _databaseFactory {
+    if (kIsWeb) {
+      return databaseFactoryFfiWeb;
+    }
+    return databaseFactory;
+  }
+
+  Future<String> _databasePath() async {
+    if (kIsWeb) {
+      return 'barscan.sqlite';
+    }
+
+    final databasePath = await getDatabasesPath();
+    return p.join(databasePath, 'barscan.sqlite');
   }
 
   Future<int> insert(ScanRecord record) async {

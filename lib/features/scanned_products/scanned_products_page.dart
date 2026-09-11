@@ -51,7 +51,7 @@ class _ScannedProductsPageState extends State<ScannedProductsPage> {
                   leading: const Icon(Icons.qr_code_2),
                   title: Text(record.barcode),
                   subtitle: Text(
-                    'Segment ${record.segment} - Number ${record.enteredNumber}',
+                    'Shelf ${record.segment} - Amount ${record.enteredNumber}',
                   ),
                   trailing: Text(formatTime(record.createdAt)),
                 ),

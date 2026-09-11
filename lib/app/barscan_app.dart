@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/repositories/auth_repository.dart';
 import '../data/repositories/scan_repository.dart';
-import '../data/services/queue_api_service.dart';
+import '../data/services/auth_api_service.dart';
+import '../data/services/jwt_decoder_service.dart';
+import '../data/services/product_queue_service.dart';
 import '../data/services/scan_database_service.dart';
+import '../data/services/secure_token_storage.dart';
 import '../features/auth/login_page.dart';
 
 class BarscanApp extends StatelessWidget {
@@ -11,11 +15,22 @@ class BarscanApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Provider<ScanRepository>(
-      create: (_) => ScanRepository(
-        databaseService: ScanDatabaseService.instance,
-        queueApiService: QueueApiService(),
-      ),
+    return MultiProvider(
+      providers: [
+        Provider<AuthRepository>(
+          create: (_) => AuthRepository(
+            authApiService: AuthApiService(),
+            jwtDecoderService: JwtDecoderService(),
+            secureTokenStorage: SecureTokenStorage(),
+          ),
+        ),
+        Provider<ScanRepository>(
+          create: (_) => ScanRepository(
+            databaseService: ScanDatabaseService.instance,
+            productQueueService: ProductQueueService(),
+          ),
+        ),
+      ],
       child: MaterialApp(
         title: 'Barscan',
         debugShowCheckedModeBanner: false,

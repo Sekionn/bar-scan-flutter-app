@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/models/auth_session.dart';
 import '../../data/models/scan_record.dart';
 import '../../data/repositories/scan_repository.dart';
-import '../../data/services/queue_api_service.dart';
 import '../../ui/core/app_drawer.dart';
 import 'widgets/pending_sync_button.dart';
 import 'widgets/scan_confirmation_dialog.dart';
 
 class ScannerPage extends StatefulWidget {
-  const ScannerPage({super.key, required this.username, required this.segment});
+  const ScannerPage({super.key, required this.session, required this.segment});
 
-  final String username;
+  final AuthSession session;
   final String segment;
 
   @override
@@ -78,7 +78,8 @@ class _ScannerPageState extends State<ScannerPage> {
         context: context,
         barrierDismissible: false,
         builder: (_) => ScanConfirmationDialog(
-          username: widget.username,
+          userId: widget.session.userId,
+          username: widget.session.username,
           segment: widget.segment,
           barcode: scannedBarcode,
         ),
@@ -149,14 +150,8 @@ class _ScannerPageState extends State<ScannerPage> {
         },
       );
       _showSnack('Synced $synced product${synced == 1 ? '' : 's'}.');
-    } on QueueConfigurationException {
-      _showSnack(
-        'Set MESSAGE_QUEUE_ENDPOINT with --dart-define before syncing.',
-      );
-    } on QueueSendException catch (error) {
-      _showSnack('Sync stopped. Queue returned HTTP ${error.statusCode}.');
     } catch (_) {
-      _showSnack('Sync stopped. Check the connection and try again.');
+      _showSnack('Sync stopped. Check RabbitMQ connection and try again.');
     } finally {
       await _refreshPendingCount();
       if (mounted) {
@@ -180,13 +175,27 @@ class _ScannerPageState extends State<ScannerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: AppDrawer(
-        username: widget.username,
+        session: widget.session,
         segment: widget.segment,
         pendingCount: _pendingCount,
         onRecordsChanged: _refreshPendingCount,
       ),
       appBar: AppBar(
-        title: Text('Segment ${widget.segment}'),
+        title: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => Navigator.of(context).pop(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: Text('Shelf ${widget.segment}')),
+                const SizedBox(width: 6),
+                const Icon(Icons.edit, size: 18),
+              ],
+            ),
+          ),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),

@@ -15,3 +15,19 @@ String? numberText(String? value) {
   }
   return null;
 }
+
+String? nonNegativeIntegerText(String? value) {
+  final requiredError = requiredText(value);
+  if (requiredError != null) {
+    return requiredError;
+  }
+
+  final parsed = int.tryParse(value!.trim());
+  if (parsed == null) {
+    return 'Enter a whole number';
+  }
+  if (parsed < 0) {
+    return 'Enter 0 or higher';
+  }
+  return null;
+}

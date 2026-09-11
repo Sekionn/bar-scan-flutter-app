@@ -1,0 +1,36 @@
+﻿{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Barscan Chrome (local env)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--web-hostname=127.0.0.1",
+        "--web-port=53080",
+        "--dart-define-from-file=env/local.json"
+      ]
+    },
+    {
+      "name": "Barscan (local env)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define-from-file=env/local.json"
+      ]
+    },
+    {
+      "name": "Barscan Android Emulator (local env)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "emulator-5554",
+      "toolArgs": [
+        "--dart-define-from-file=env/local.json"
+      ]
+    }
+  ]
+}

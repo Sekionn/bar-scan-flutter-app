@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../data/models/auth_session.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/scanned_products/scanned_products_page.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
     super.key,
-    required this.username,
+    required this.session,
     required this.segment,
     required this.pendingCount,
     required this.onRecordsChanged,
   });
 
-  final String username;
+  final AuthSession session;
   final String segment;
   final int pendingCount;
   final VoidCallback onRecordsChanged;
@@ -35,7 +38,7 @@ class AppDrawer extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 4),
-                  Text('$username - segment $segment'),
+                  Text('${session.username} - shelf $segment'),
                 ],
               ),
             ),
@@ -58,7 +61,11 @@ class AppDrawer extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Log out'),
-              onTap: () {
+              onTap: () async {
+                await context.read<AuthRepository>().logout();
+                if (!context.mounted) {
+                  return;
+                }
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute<void>(builder: (_) => const LoginPage()),
                   (_) => false,

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../data/repositories/auth_repository.dart';
+import '../../data/services/auth_api_service.dart';
 import '../../utils/validators.dart';
 import '../segment/segment_page.dart';
 
@@ -15,6 +18,8 @@ class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  bool _isLoggingIn = false;
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -22,16 +27,43 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _logIn() {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _logIn() async {
+    if (_isLoggingIn || !_formKey.currentState!.validate()) {
       return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => SegmentPage(username: _usernameController.text.trim()),
-      ),
-    );
+    setState(() => _isLoggingIn = true);
+    try {
+      final session = await context.read<AuthRepository>().login(
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => SegmentPage(session: session)),
+      );
+    } on InvalidCredentialsException {
+      _showSnack('Invalid username or password.');
+    } on AuthRequestException catch (error) {
+      _showSnack('Login failed with HTTP ${error.statusCode}.');
+    } catch (_) {
+      _showSnack('Login failed. Check the connection and try again.');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoggingIn = false);
+      }
+    }
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -66,6 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                         labelText: 'Username',
                         prefixIcon: Icon(Icons.person_outline),
                       ),
+                      enabled: !_isLoggingIn,
                       textInputAction: TextInputAction.next,
                       validator: requiredText,
                     ),
@@ -77,15 +110,21 @@ class _LoginPageState extends State<LoginPage> {
                         labelText: 'Password',
                         prefixIcon: Icon(Icons.lock_outline),
                       ),
+                      enabled: !_isLoggingIn,
                       obscureText: true,
                       onFieldSubmitted: (_) => _logIn(),
                       validator: requiredText,
                     ),
                     const SizedBox(height: 24),
                     FilledButton.icon(
-                      onPressed: _logIn,
-                      icon: const Icon(Icons.login),
-                      label: const Text('Log in'),
+                      onPressed: _isLoggingIn ? null : _logIn,
+                      icon: _isLoggingIn
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.login),
+                      label: Text(_isLoggingIn ? 'Logging in' : 'Log in'),
                     ),
                   ],
                 ),

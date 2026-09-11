@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../data/models/auth_session.dart';
 import '../../utils/validators.dart';
 import '../scanner/scanner_page.dart';
 
 class SegmentPage extends StatefulWidget {
-  const SegmentPage({super.key, required this.username});
+  const SegmentPage({super.key, required this.session});
 
-  final String username;
+  final AuthSession session;
 
   @override
   State<SegmentPage> createState() => _SegmentPageState();
@@ -30,7 +31,7 @@ class _SegmentPageState extends State<SegmentPage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ScannerPage(
-          username: widget.username,
+          session: widget.session,
           segment: _segmentController.text.trim(),
         ),
       ),
@@ -53,23 +54,23 @@ class _SegmentPageState extends State<SegmentPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Choose the segment number',
+                      'Choose the shelf number',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    const Text('This value is stored exactly as entered.'),
+                    const Text('This value is sent as shelfOfOrigin.'),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _segmentController,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        labelText: 'Segment number',
+                        labelText: 'Shelf number',
                         prefixIcon: Icon(Icons.tag),
                       ),
                       keyboardType: TextInputType.number,
                       onFieldSubmitted: (_) => _continue(),
-                      validator: numberText,
+                      validator: nonNegativeIntegerText,
                     ),
                     const SizedBox(height: 24),
                     FilledButton.icon(

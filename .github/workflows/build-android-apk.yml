@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create Dart define file
+        run: |
+          mkdir -p env
+          cat > env/ci.json <<EOF
+          {
+            "BACKEND_BASE_URL": "${{ secrets.BACKEND_BASE_URL }}",
+            "RABBITMQ_HOST": "${{ secrets.RABBITMQ_HOST }}",
+            "RABBITMQ_PORT": ${{ secrets.RABBITMQ_PORT }},
+            "RABBITMQ_USERNAME": "${{ secrets.RABBITMQ_USERNAME }}",
+            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}",
+            "PRODUCT_CREATED_EXCHANGE": "${{ secrets.PRODUCT_CREATED_EXCHANGE }}",
+            "PRODUCT_CREATED_QUEUE": "${{ secrets.PRODUCT_CREATED_QUEUE }}",
+            "PRODUCT_CREATED_ROUTING_KEY": "${{ secrets.PRODUCT_CREATED_ROUTING_KEY }}"
+          }
+          EOF
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build APK
+        run: flutter build apk --debug --dart-define-from-file=env/ci.json
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: barscan-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk

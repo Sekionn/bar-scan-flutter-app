@@ -1,6 +1,7 @@
 class ScanRecord {
   const ScanRecord({
     this.id,
+    required this.userId,
     required this.username,
     required this.segment,
     required this.barcode,
@@ -9,15 +10,20 @@ class ScanRecord {
   });
 
   final int? id;
+  final String userId;
   final String username;
   final String segment;
   final String barcode;
   final String enteredNumber;
   final DateTime createdAt;
 
+  int get shelfOfOrigin => int.parse(segment);
+  int get amountCounted => int.parse(enteredNumber);
+
   Map<String, Object?> toDatabase() {
     return {
       'id': id,
+      'user_id': userId,
       'username': username,
       'segment': segment,
       'barcode': barcode,
@@ -26,20 +32,20 @@ class ScanRecord {
     };
   }
 
-  Map<String, Object?> toQueuePayload() {
+  Map<String, Object?> toProductCreatedEvent() {
     return {
-      'id': id,
-      'username': username,
-      'segment': segment,
+      'userId': userId,
+      'productId': null,
       'barcode': barcode,
-      'number': enteredNumber,
-      'createdAt': createdAt.toIso8601String(),
+      'shelfOfOrigin': shelfOfOrigin,
+      'amountCounted': amountCounted,
     };
   }
 
   factory ScanRecord.fromDatabase(Map<String, Object?> row) {
     return ScanRecord(
       id: row['id'] as int,
+      userId: row['user_id'] as String,
       username: row['username'] as String,
       segment: row['segment'] as String,
       barcode: row['barcode'] as String,

@@ -6,11 +6,13 @@ import '../../../utils/validators.dart';
 class ScanConfirmationDialog extends StatefulWidget {
   const ScanConfirmationDialog({
     super.key,
+    required this.userId,
     required this.username,
     required this.segment,
     required this.barcode,
   });
 
+  final String userId;
   final String username;
   final String segment;
   final String barcode;
@@ -44,6 +46,7 @@ class _ScanConfirmationDialogState extends State<ScanConfirmationDialog> {
 
     Navigator.of(context).pop(
       ScanRecord(
+        userId: widget.userId,
         username: widget.username,
         segment: widget.segment,
         barcode: _barcodeController.text.trim(),
@@ -75,14 +78,11 @@ class _ScanConfirmationDialogState extends State<ScanConfirmationDialog> {
               controller: _numberController,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                labelText: 'Number',
+                labelText: 'Amount counted',
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
+              keyboardType: TextInputType.number,
               onFieldSubmitted: (_) => _addRecord(),
-              validator: numberText,
+              validator: nonNegativeIntegerText,
             ),
           ],
         ),
