@@ -3,8 +3,12 @@ name: Build Android Release APK
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+    paths:
+      - pubspec.yaml
 
 jobs:
   build-apk:
@@ -14,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -33,6 +39,38 @@ jobs:
             echo "Release tag v$RELEASE_TAG does not match pubspec version $APP_VERSION."
             exit 1
           fi
+
+      - name: Verify pubspec version increased
+        if: github.ref_type == 'branch'
+        run: |
+          python3 <<'PY'
+          import re
+          import subprocess
+          import sys
+
+          def read_version(text):
+              match = re.search(r'^version:\s*([^\s]+)', text, re.MULTILINE)
+              if not match:
+                  raise SystemExit('No version found in pubspec.yaml.')
+              return match.group(1)
+
+          def comparable(version):
+              name, _, build = version.partition('+')
+              parts = tuple(int(part) for part in name.split('.'))
+              build_number = int(build) if build.isdigit() else 0
+              return (*parts, build_number)
+
+          current = read_version(open('pubspec.yaml', encoding='utf-8').read())
+          previous_text = subprocess.check_output(['git', 'show', 'HEAD^:pubspec.yaml'], text=True)
+          previous = read_version(previous_text)
+
+          if comparable(current) <= comparable(previous):
+              print(f'pubspec.yaml version must increase for a release build. Previous: {previous}, current: {current}.')
+              sys.exit(1)
+
+          print(f'pubspec.yaml version increased from {previous} to {current}.')
+          PY
+
       - name: Create Dart define file
         run: |
           mkdir -p env
@@ -77,7 +115,3 @@ jobs:
         with:
           name: barscan-android-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-
-
-
-
