@@ -1,14 +1,14 @@
-name: Build Android APK
+name: Build Android Release APK
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build-apk:
-    name: Build debug APK
+    name: Build signed release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -24,6 +24,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify release tag matches pubspec version
+        if: github.ref_type == 'tag'
+        run: |
+          APP_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          RELEASE_TAG="${GITHUB_REF_NAME#v}"
+          if [ "$APP_VERSION" != "$RELEASE_TAG" ]; then
+            echo "Release tag v$RELEASE_TAG does not match pubspec version $APP_VERSION."
+            exit 1
+          fi
       - name: Create Dart define file
         run: |
           mkdir -p env
@@ -40,17 +49,35 @@ jobs:
           }
           EOF
 
+      - name: Create Android signing files
+        run: |
+          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
       - name: Analyze
         run: flutter analyze
 
       - name: Test
         run: flutter test
 
-      - name: Build APK
-        run: flutter build apk --debug --dart-define-from-file=env/ci.json
+      - name: Build release APK
+        run: >
+          flutter build apk
+          --release
+          --build-number=${{ github.run_number }}
+          --dart-define-from-file=env/ci.json
 
-      - name: Upload APK
+      - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: barscan-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: barscan-android-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+
+
+

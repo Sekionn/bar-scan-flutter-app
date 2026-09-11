@@ -1,14 +1,14 @@
-name: Build iOS IPA
+name: Build iOS Release IPA
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build-ipa:
-    name: Build signed iOS IPA
+    name: Build signed release IPA
     runs-on: macos-latest
 
     steps:
@@ -24,6 +24,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify release tag matches pubspec version
+        if: github.ref_type == 'tag'
+        run: |
+          APP_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
+          RELEASE_TAG="${GITHUB_REF_NAME#v}"
+          if [ "$APP_VERSION" != "$RELEASE_TAG" ]; then
+            echo "Release tag v$RELEASE_TAG does not match pubspec version $APP_VERSION."
+            exit 1
+          fi
       - name: Create Dart define file
         run: |
           mkdir -p env
@@ -100,6 +109,7 @@ jobs:
         run: >
           flutter build ipa
           --release
+          --build-number=${{ github.run_number }}
           --dart-define-from-file=env/ci.json
           --export-options-plist=ios/ExportOptions.plist
 
@@ -108,4 +118,8 @@ jobs:
         with:
           name: barscan-ios-ipa
           path: build/ios/ipa/*.ipa
+
+
+
+
 
