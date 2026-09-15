@@ -22,8 +22,19 @@ class ScannerPage extends StatefulWidget {
 }
 
 class _ScannerPageState extends State<ScannerPage> {
+  static const _scanStabilizationWindow = Duration(milliseconds: 500);
+  static const _allowedFormats = <BarcodeFormat>[
+    BarcodeFormat.ean8,
+    BarcodeFormat.ean13,
+    BarcodeFormat.upcA,
+    BarcodeFormat.upcE,
+  ];
+
   late final ScanRepository _scanRepository;
   late final MobileScannerController _scannerController;
+
+  final List<String> _candidateBarcodes = [];
+  Timer? _stabilizationTimer;
 
   int _pendingCount = 0;
   bool _isHandlingScan = false;
@@ -37,13 +48,17 @@ class _ScannerPageState extends State<ScannerPage> {
     _scanRepository = context.read<ScanRepository>();
     _scannerController = MobileScannerController(
       facing: CameraFacing.back,
-      detectionSpeed: DetectionSpeed.noDuplicates,
+      detectionSpeed: DetectionSpeed.normal,
+      detectionTimeoutMs: 75,
+      formats: _allowedFormats,
+      autoZoom: true,
     );
     unawaited(_refreshPendingCount());
   }
 
   @override
   void dispose() {
+    _resetStabilizationWindow();
     _scannerController.dispose();
     super.dispose();
   }
@@ -55,12 +70,61 @@ class _ScannerPageState extends State<ScannerPage> {
     }
   }
 
-  Future<void> _handleBarcode(BarcodeCapture capture) async {
+  void _handleBarcode(BarcodeCapture capture) {
     if (!_isScanning || _isHandlingScan || _isSyncing) {
       return;
     }
 
-    final scannedBarcode = _firstBarcodeValue(capture);
+    final scannedBarcodes = _barcodeValues(capture);
+    if (scannedBarcodes.isEmpty) {
+      return;
+    }
+
+    _candidateBarcodes.addAll(scannedBarcodes);
+    _stabilizationTimer ??= Timer(
+      _scanStabilizationWindow,
+      () => unawaited(_confirmStabilizedBarcode()),
+    );
+  }
+
+  List<String> _barcodeValues(BarcodeCapture capture) {
+    return capture.barcodes
+        .map(_supportedBarcodeValue)
+        .nonNulls
+        .toList(growable: false);
+  }
+
+  String? _supportedBarcodeValue(Barcode barcode) {
+    if (!_allowedFormats.contains(barcode.format)) {
+      return null;
+    }
+
+    final value = _normalizedBarcodeValue(barcode.rawValue?.trim() ?? '');
+    if (!RegExp(r'^\d+$').hasMatch(value)) {
+      return null;
+    }
+
+    return switch (barcode.format) {
+      BarcodeFormat.ean8 || BarcodeFormat.upcE when value.length == 8 => value,
+      BarcodeFormat.upcA when value.length == 12 => value,
+      BarcodeFormat.ean13 when value.length == 13 => value,
+      _ => null,
+    };
+  }
+
+  String _normalizedBarcodeValue(String value) {
+    return value.replaceAll(RegExp(r'\s|-'), '');
+  }
+
+  Future<void> _confirmStabilizedBarcode() async {
+    if (!_isScanning || _isHandlingScan || _isSyncing) {
+      _resetStabilizationWindow();
+      return;
+    }
+
+    final scannedBarcode = _mostFrequentBarcode(_candidateBarcodes);
+    _resetStabilizationWindow();
+
     if (scannedBarcode == null) {
       return;
     }
@@ -69,6 +133,7 @@ class _ScannerPageState extends State<ScannerPage> {
     if (mounted) {
       setState(() => _isScanning = false);
     }
+
     try {
       if (!mounted) {
         return;
@@ -93,14 +158,31 @@ class _ScannerPageState extends State<ScannerPage> {
     }
   }
 
-  String? _firstBarcodeValue(BarcodeCapture capture) {
-    for (final entry in capture.barcodes) {
-      final value = entry.rawValue?.trim();
-      if (value != null && value.isNotEmpty) {
-        return value;
+  String? _mostFrequentBarcode(List<String> values) {
+    if (values.isEmpty) {
+      return null;
+    }
+
+    final counts = <String, int>{};
+    var bestValue = values.first;
+    var bestCount = 0;
+
+    for (final value in values) {
+      final count = (counts[value] ?? 0) + 1;
+      counts[value] = count;
+      if (count > bestCount) {
+        bestValue = value;
+        bestCount = count;
       }
     }
-    return null;
+
+    return bestValue;
+  }
+
+  void _resetStabilizationWindow() {
+    _stabilizationTimer?.cancel();
+    _stabilizationTimer = null;
+    _candidateBarcodes.clear();
   }
 
   Future<void> _addPendingRecord(ScanRecord record) async {
@@ -115,6 +197,8 @@ class _ScannerPageState extends State<ScannerPage> {
     if (_isHandlingScan || _isSyncing) {
       return;
     }
+
+    _resetStabilizationWindow();
 
     if (mounted) {
       setState(() => _isScanning = !_isScanning);
@@ -132,6 +216,7 @@ class _ScannerPageState extends State<ScannerPage> {
       return;
     }
 
+    _resetStabilizationWindow();
     setState(() {
       _isSyncing = true;
       _isScanning = false;
@@ -269,7 +354,7 @@ class _ScannerPageState extends State<ScannerPage> {
                     padding: const EdgeInsets.all(12),
                     child: Text(
                       _isScanning
-                          ? 'Point the back camera at a barcode.'
+                          ? 'Hold the barcode steady.'
                           : 'Tap Scan when you are ready.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white),
