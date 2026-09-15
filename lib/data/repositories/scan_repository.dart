@@ -19,6 +19,10 @@ class ScanRepository {
     return databaseService.records();
   }
 
+  Future<void> updateScan(ScanRecord record) {
+    return databaseService.update(record);
+  }
+
   Future<int> pendingCount() {
     return databaseService.count();
   }

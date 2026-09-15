@@ -20,6 +20,26 @@ class ScanRecord {
   int get shelfOfOrigin => int.parse(segment);
   int get amountCounted => int.parse(enteredNumber);
 
+  ScanRecord copyWith({
+    int? id,
+    String? userId,
+    String? username,
+    String? segment,
+    String? barcode,
+    String? enteredNumber,
+    DateTime? createdAt,
+  }) {
+    return ScanRecord(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      username: username ?? this.username,
+      segment: segment ?? this.segment,
+      barcode: barcode ?? this.barcode,
+      enteredNumber: enteredNumber ?? this.enteredNumber,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   Map<String, Object?> toDatabase() {
     return {
       'id': id,

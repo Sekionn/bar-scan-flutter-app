@@ -75,6 +75,21 @@ class ScanDatabaseService {
     return rows.map(ScanRecord.fromDatabase).toList();
   }
 
+  Future<void> update(ScanRecord record) async {
+    final id = record.id;
+    if (id == null) {
+      throw ArgumentError('Cannot update a scan record without an id.');
+    }
+
+    final db = await database;
+    await db.update(
+      'scans',
+      record.toDatabase()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<int> count() async {
     final db = await database;
     final result = await db.rawQuery('SELECT COUNT(*) AS total FROM scans');

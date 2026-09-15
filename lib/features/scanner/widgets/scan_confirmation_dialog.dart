@@ -25,17 +25,24 @@ class _ScanConfirmationDialogState extends State<ScanConfirmationDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _barcodeController;
   final _numberController = TextEditingController();
+  final _numberFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _barcodeController = TextEditingController(text: widget.barcode);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _numberFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _barcodeController.dispose();
     _numberController.dispose();
+    _numberFocusNode.dispose();
     super.dispose();
   }
 
@@ -76,6 +83,7 @@ class _ScanConfirmationDialogState extends State<ScanConfirmationDialog> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _numberController,
+              focusNode: _numberFocusNode,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Amount counted',
