@@ -1,0 +1,41 @@
+name: Deploy To Connected iPhone
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-ios-device:
+    name: Deploy to connected iPhone through Xcode
+    runs-on:
+      - self-hosted
+      - macOS
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Dart define file
+        run: |
+          mkdir -p env
+          cat > env/ci.json <<EOF
+          {
+            "BACKEND_BASE_URL": "${{ secrets.BACKEND_BASE_URL }}",
+            "RABBITMQ_HOST": "${{ secrets.RABBITMQ_HOST }}",
+            "RABBITMQ_PORT": ${{ secrets.RABBITMQ_PORT }},
+            "RABBITMQ_USERNAME": "${{ secrets.RABBITMQ_USERNAME }}",
+            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}",
+            "PRODUCT_CREATED_EXCHANGE": "${{ secrets.PRODUCT_CREATED_EXCHANGE }}",
+            "PRODUCT_CREATED_QUEUE": "${{ secrets.PRODUCT_CREATED_QUEUE }}",
+            "PRODUCT_CREATED_ROUTING_KEY": "${{ secrets.PRODUCT_CREATED_ROUTING_KEY }}"
+          }
+          EOF
+
+      - name: Deploy to iPhone
+        env:
+          IOS_DEVICE_ID: ${{ secrets.IOS_DEVICE_ID }}
+          DART_DEFINE_FILE: env/ci.json
+          BUILD_MODE: release
+        run: |
+          bash scripts/deploy_ios_device.sh
+
+
