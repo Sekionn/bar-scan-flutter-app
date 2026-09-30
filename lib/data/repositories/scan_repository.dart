@@ -1,15 +1,18 @@
 import '../models/scan_record.dart';
 import '../services/product_queue_service.dart';
+import '../services/queue_status_api_service.dart';
 import '../services/scan_database_service.dart';
 
 class ScanRepository {
   const ScanRepository({
     required this.databaseService,
     required this.productQueueService,
+    required this.queueStatusApiService,
   });
 
   final ScanDatabaseService databaseService;
   final ProductQueueService productQueueService;
+  final QueueStatusApiService queueStatusApiService;
 
   Future<int> addScan(ScanRecord record) {
     return databaseService.insert(record);
@@ -28,18 +31,65 @@ class ScanRepository {
   }
 
   Future<int> syncPendingScans({
+    required String token,
     required void Function(int synced, int total) onProgress,
   }) async {
     final records = await databaseService.records();
-    var synced = 0;
+    final syncBatchId = ScanRecord.createMessageId();
+    final publishedRecords = <ScanRecord>[];
+    final unpublishedRecords = <ScanRecord>[];
+
+    await queueStatusApiService.registerExpectedMessages(
+      token: token,
+      syncBatchId: syncBatchId,
+      messageIds: records.map((record) => record.messageId).toList(growable: false),
+    );
 
     for (final record in records.reversed) {
-      await productQueueService.publishProductCreated(record);
-      await databaseService.delete(record.id!);
-      synced += 1;
-      onProgress(synced, records.length);
+      try {
+        await productQueueService.publishProductCreated(record);
+        publishedRecords.add(record);
+        onProgress(publishedRecords.length, records.length);
+      } catch (_) {
+        unpublishedRecords.add(record);
+      }
     }
 
-    return synced;
+    await queueStatusApiService.cancelUnpublishedMessages(
+      token: token,
+      syncBatchId: syncBatchId,
+      messageIds: unpublishedRecords
+          .map((record) => record.messageId)
+          .toList(growable: false),
+    );
+
+    await _deletePublishedRecords(publishedRecords);
+
+    if (unpublishedRecords.isNotEmpty) {
+      throw ProductSyncPartialFailure(
+        publishedCount: publishedRecords.length,
+        unpublishedCount: unpublishedRecords.length,
+      );
+    }
+
+    return publishedRecords.length;
   }
+
+  Future<void> _deletePublishedRecords(
+    List<ScanRecord> publishedRecords,
+  ) async {
+    for (final record in publishedRecords) {
+      await databaseService.delete(record.id!);
+    }
+  }
+}
+
+class ProductSyncPartialFailure implements Exception {
+  const ProductSyncPartialFailure({
+    required this.publishedCount,
+    required this.unpublishedCount,
+  });
+
+  final int publishedCount;
+  final int unpublishedCount;
 }

@@ -225,6 +225,7 @@ class _ScannerPageState extends State<ScannerPage> {
 
     try {
       final synced = await _scanRepository.syncPendingScans(
+        token: widget.session.token,
         onProgress: (synced, total) {
           if (mounted) {
             setState(() {

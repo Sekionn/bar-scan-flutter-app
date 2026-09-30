@@ -22,11 +22,12 @@ class ScanDatabaseService {
     _database = await factory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        version: 2,
+        version: 3,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE scans (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
+              message_id TEXT NOT NULL,
               user_id TEXT NOT NULL,
               username TEXT NOT NULL,
               segment TEXT NOT NULL,
@@ -41,6 +42,20 @@ class ScanDatabaseService {
             await db.execute(
               "ALTER TABLE scans ADD COLUMN user_id TEXT NOT NULL DEFAULT ''",
             );
+          }
+          if (oldVersion < 3) {
+            await db.execute(
+              "ALTER TABLE scans ADD COLUMN message_id TEXT NOT NULL DEFAULT ''",
+            );
+            final rows = await db.query('scans', columns: ['id']);
+            for (final row in rows) {
+              await db.update(
+                'scans',
+                {'message_id': ScanRecord.createMessageId()},
+                where: 'id = ?',
+                whereArgs: [row['id']],
+              );
+            }
           }
         },
       ),
