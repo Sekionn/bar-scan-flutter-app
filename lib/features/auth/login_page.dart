@@ -80,14 +80,21 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Barscan',
-                      style: Theme.of(context).textTheme.displaySmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Image.asset(
+                          'assets/branding/app_icon.png',
+                          width: 184,
+                          height: 184,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 24),
                     Text(
                       'Sign in to begin a store segment scan.',
+                      textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     const SizedBox(height: 32),

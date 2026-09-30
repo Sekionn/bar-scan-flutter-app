@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="barscan_app"
+        android:label="Bar'scan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

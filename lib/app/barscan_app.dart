@@ -34,7 +34,7 @@ class BarscanApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Barscan',
+        title: "Bar'scan",
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff2563eb)),
