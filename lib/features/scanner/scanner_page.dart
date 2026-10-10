@@ -211,9 +211,10 @@ class _ScannerPageState extends State<ScannerPage> {
       return;
     }
 
+    final t = AppLocalizations.read(context);
     final records = await _scanRepository.pendingScans();
     if (records.isEmpty) {
-      _showSnack(AppLocalizations.read(context).noProductsWaiting);
+      _showSnack(t.noProductsWaiting);
       return;
     }
 
@@ -235,9 +236,9 @@ class _ScannerPageState extends State<ScannerPage> {
           }
         },
       );
-      _showSnack(AppLocalizations.read(context).syncedProducts(synced));
+      _showSnack(t.syncedProducts(synced));
     } catch (_) {
-      _showSnack(AppLocalizations.read(context).syncStopped);
+      _showSnack(t.syncStopped);
     } finally {
       await _refreshPendingCount();
       if (mounted) {
