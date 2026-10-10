@@ -17,7 +17,11 @@ class AuthApiService {
     final response = await _client.post(
       Uri.parse('${AppConfig.backendBaseUrl}/auth/login'),
       headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
+      body: jsonEncode({
+        'username': username,
+        'password': password,
+        'clientType': 'mobile',
+      }),
     );
 
     if (response.statusCode == 401) {
