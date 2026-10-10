@@ -82,6 +82,7 @@ The mobile app integration follows `mobile-integration-context.md`:
 - Local scan rows include `userId` so unsynced records can be sent after app restarts.
 - Sync publishes RabbitMQ `product.created` messages to `bar-scan.products`.
 - Product-created messages do not include `companyId`; the backend derives it from `userId`.
+- Queue, exchange, and routing-key names are static app constants. Only the RabbitMQ connection details are build-time configuration.
 
 ## Local SQLite Storage
 
