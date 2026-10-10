@@ -101,10 +101,7 @@ jobs:
             "RABBITMQ_HOST": "${{ secrets.RABBITMQ_HOST }}",
             "RABBITMQ_PORT": ${{ secrets.RABBITMQ_PORT }},
             "RABBITMQ_USERNAME": "${{ secrets.RABBITMQ_USERNAME }}",
-            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}",
-            "PRODUCT_CREATED_EXCHANGE": "${{ secrets.PRODUCT_CREATED_EXCHANGE }}",
-            "PRODUCT_CREATED_QUEUE": "${{ secrets.PRODUCT_CREATED_QUEUE }}",
-            "PRODUCT_CREATED_ROUTING_KEY": "${{ secrets.PRODUCT_CREATED_ROUTING_KEY }}"
+            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}"
           }
           EOF
 
@@ -164,10 +161,7 @@ jobs:
             "RABBITMQ_HOST": "${{ secrets.RABBITMQ_HOST }}",
             "RABBITMQ_PORT": ${{ secrets.RABBITMQ_PORT }},
             "RABBITMQ_USERNAME": "${{ secrets.RABBITMQ_USERNAME }}",
-            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}",
-            "PRODUCT_CREATED_EXCHANGE": "${{ secrets.PRODUCT_CREATED_EXCHANGE }}",
-            "PRODUCT_CREATED_QUEUE": "${{ secrets.PRODUCT_CREATED_QUEUE }}",
-            "PRODUCT_CREATED_ROUTING_KEY": "${{ secrets.PRODUCT_CREATED_ROUTING_KEY }}"
+            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}"
           }
           EOF
 
