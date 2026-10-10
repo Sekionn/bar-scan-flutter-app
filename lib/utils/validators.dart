@@ -1,33 +1,42 @@
-String? requiredText(String? value) {
+String? requiredText(String? value, {String requiredMessage = 'Required'}) {
   if (value == null || value.trim().isEmpty) {
-    return 'Required';
+    return requiredMessage;
   }
   return null;
 }
 
-String? numberText(String? value) {
-  final requiredError = requiredText(value);
+String? numberText(
+  String? value, {
+  String requiredMessage = 'Required',
+  String numberMessage = 'Enter a number',
+}) {
+  final requiredError = requiredText(value, requiredMessage: requiredMessage);
   if (requiredError != null) {
     return requiredError;
   }
   if (num.tryParse(value!.trim()) == null) {
-    return 'Enter a number';
+    return numberMessage;
   }
   return null;
 }
 
-String? nonNegativeIntegerText(String? value) {
-  final requiredError = requiredText(value);
+String? nonNegativeIntegerText(
+  String? value, {
+  String requiredMessage = 'Required',
+  String integerMessage = 'Enter a whole number',
+  String zeroOrHigherMessage = 'Enter 0 or higher',
+}) {
+  final requiredError = requiredText(value, requiredMessage: requiredMessage);
   if (requiredError != null) {
     return requiredError;
   }
 
   final parsed = int.tryParse(value!.trim());
   if (parsed == null) {
-    return 'Enter a whole number';
+    return integerMessage;
   }
   if (parsed < 0) {
-    return 'Enter 0 or higher';
+    return zeroOrHigherMessage;
   }
   return null;
 }

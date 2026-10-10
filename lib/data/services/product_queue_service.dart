@@ -7,7 +7,10 @@ import '../../config/app_config.dart';
 import '../models/scan_record.dart';
 
 class ProductQueueService {
-  Future<void> publishProductCreated(ScanRecord record) async {
+  Future<void> publishProductCreated({
+    required ScanRecord record,
+    required String syncBatchId,
+  }) async {
     final settings = ConnectionSettings(
       host: AppConfig.rabbitMqHost,
       port: AppConfig.rabbitMqPort,
@@ -33,7 +36,7 @@ class ProductQueueService {
       );
       await queue.bind(exchange, AppConfig.productCreatedRoutingKey);
 
-      final payload = jsonEncode(record.toProductCreatedEvent());
+      final payload = jsonEncode(record.toProductCreatedEvent(syncBatchId));
       final confirmation = Completer<void>();
       late final StreamSubscription<PublishNotification> subscription;
       subscription = channel.publishNotifier((notification) {

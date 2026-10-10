@@ -7,7 +7,13 @@ class QueueApiService {
 
   final ProductQueueService _productQueueService;
 
-  Future<void> send(ScanRecord record) {
-    return _productQueueService.publishProductCreated(record);
+  Future<void> send({
+    required ScanRecord record,
+    required String syncBatchId,
+  }) {
+    return _productQueueService.publishProductCreated(
+      record: record,
+      syncBatchId: syncBatchId,
+    );
   }
 }

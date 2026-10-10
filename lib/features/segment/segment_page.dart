@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/auth_session.dart';
+import '../../i18n/app_localizations.dart';
 import '../../utils/validators.dart';
 import '../scanner/scanner_page.dart';
 
@@ -40,8 +41,10 @@ class _SegmentPageState extends State<SegmentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Store segment')),
+      appBar: AppBar(title: Text(t.storeSegment)),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -54,29 +57,34 @@ class _SegmentPageState extends State<SegmentPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Choose the shelf number',
+                      t.chooseShelf,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    const Text('This value is sent as shelfOfOrigin.'),
+                    Text(t.shelfSentAsOrigin),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _segmentController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Shelf number',
-                        prefixIcon: Icon(Icons.tag),
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        labelText: t.shelfNumber,
+                        prefixIcon: const Icon(Icons.tag),
                       ),
                       keyboardType: TextInputType.number,
                       onFieldSubmitted: (_) => _continue(),
-                      validator: nonNegativeIntegerText,
+                      validator: (value) => nonNegativeIntegerText(
+                        value,
+                        requiredMessage: t.required,
+                        integerMessage: t.enterWholeNumber,
+                        zeroOrHigherMessage: t.enterZeroOrHigher,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     FilledButton.icon(
                       onPressed: _continue,
                       icon: const Icon(Icons.qr_code_scanner),
-                      label: const Text('Start scanning'),
+                      label: Text(t.startScanning),
                     ),
                   ],
                 ),

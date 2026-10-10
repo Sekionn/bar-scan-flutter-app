@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/scan_record.dart';
 import '../../data/repositories/scan_repository.dart';
+import '../../i18n/app_localizations.dart';
 import '../../utils/date_formatters.dart';
 import '../../utils/validators.dart';
 
@@ -46,15 +47,18 @@ class _ScannedProductsPageState extends State<ScannedProductsPage> {
     _refreshRecords();
 
     if (mounted) {
+      final t = AppLocalizations.read(context);
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Scan updated.')));
+          .showSnackBar(SnackBar(content: Text(t.scanUpdated)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Scanned products')),
+      appBar: AppBar(title: Text(t.scannedProducts)),
       body: FutureBuilder<List<ScanRecord>>(
         future: _recordsFuture,
         builder: (context, snapshot) {
@@ -64,7 +68,7 @@ class _ScannedProductsPageState extends State<ScannedProductsPage> {
 
           final records = snapshot.data ?? const [];
           if (records.isEmpty) {
-            return const Center(child: Text('No products waiting to sync.'));
+            return Center(child: Text(t.noProductsWaiting));
           }
 
           return ListView.separated(
@@ -79,7 +83,7 @@ class _ScannedProductsPageState extends State<ScannedProductsPage> {
                   leading: const Icon(Icons.qr_code_2),
                   title: Text(record.barcode),
                   subtitle: Text(
-                    'Shelf ${record.segment} - Amount ${record.enteredNumber}',
+                    '${t.shelfLabel} ${record.segment} - ${t.amountLabel} ${record.enteredNumber}',
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -145,8 +149,10 @@ class _EditScanRecordDialogState extends State<_EditScanRecordDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return AlertDialog(
-      title: const Text('Edit scan'),
+      title: Text(t.editScan),
       content: Form(
         key: _formKey,
         child: Column(
@@ -154,25 +160,32 @@ class _EditScanRecordDialogState extends State<_EditScanRecordDialog> {
           children: [
             TextFormField(
               controller: _barcodeController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Barcode',
-                prefixIcon: Icon(Icons.qr_code_2),
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: t.barcode,
+                prefixIcon: const Icon(Icons.qr_code_2),
               ),
               keyboardType: TextInputType.number,
-              validator: requiredText,
+              validator: (value) => requiredText(
+                value,
+                requiredMessage: t.required,
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _amountController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Amount',
-                prefixIcon: Icon(Icons.numbers),
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: t.amount,
+                prefixIcon: const Icon(Icons.numbers),
               ),
               keyboardType: TextInputType.number,
               onFieldSubmitted: (_) => _save(),
-              validator: numberText,
+              validator: (value) => numberText(
+                value,
+                requiredMessage: t.required,
+                numberMessage: t.enterNumber,
+              ),
             ),
           ],
         ),
@@ -180,12 +193,12 @@ class _EditScanRecordDialogState extends State<_EditScanRecordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(t.cancel),
         ),
         FilledButton.icon(
           onPressed: _save,
           icon: const Icon(Icons.save),
-          label: const Text('Save'),
+          label: Text(t.save),
         ),
       ],
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../i18n/app_localizations.dart';
+
 class PendingSyncButton extends StatelessWidget {
   const PendingSyncButton({
     super.key,
@@ -27,8 +29,10 @@ class PendingSyncButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return IconButton(
-      tooltip: 'Synchronize',
+      tooltip: t.synchronize,
       onPressed: isSyncing ? null : onPressed,
       icon: Badge(
         label: Text('$count'),

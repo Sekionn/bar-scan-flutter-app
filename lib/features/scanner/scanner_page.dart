@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/auth_session.dart';
 import '../../data/models/scan_record.dart';
 import '../../data/repositories/scan_repository.dart';
+import '../../i18n/app_localizations.dart';
 import '../../ui/core/app_drawer.dart';
 import 'widgets/pending_sync_button.dart';
 import 'widgets/scan_confirmation_dialog.dart';
@@ -212,7 +213,7 @@ class _ScannerPageState extends State<ScannerPage> {
 
     final records = await _scanRepository.pendingScans();
     if (records.isEmpty) {
-      _showSnack('No products waiting to sync.');
+      _showSnack(AppLocalizations.read(context).noProductsWaiting);
       return;
     }
 
@@ -225,7 +226,6 @@ class _ScannerPageState extends State<ScannerPage> {
 
     try {
       final synced = await _scanRepository.syncPendingScans(
-        token: widget.session.token,
         onProgress: (synced, total) {
           if (mounted) {
             setState(() {
@@ -235,9 +235,9 @@ class _ScannerPageState extends State<ScannerPage> {
           }
         },
       );
-      _showSnack('Synced $synced product${synced == 1 ? '' : 's'}.');
+      _showSnack(AppLocalizations.read(context).syncedProducts(synced));
     } catch (_) {
-      _showSnack('Sync stopped. Check RabbitMQ connection and try again.');
+      _showSnack(AppLocalizations.read(context).syncStopped);
     } finally {
       await _refreshPendingCount();
       if (mounted) {
@@ -259,6 +259,8 @@ class _ScannerPageState extends State<ScannerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
       drawer: AppDrawer(
         session: widget.session,
@@ -275,7 +277,7 @@ class _ScannerPageState extends State<ScannerPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(child: Text('Shelf ${widget.segment}')),
+                Flexible(child: Text(t.shelf(widget.segment))),
                 const SizedBox(width: 6),
                 const Icon(Icons.edit, size: 18),
               ],
@@ -302,7 +304,7 @@ class _ScannerPageState extends State<ScannerPage> {
                       LinearProgressIndicator(value: _syncProgress),
                       const SizedBox(height: 6),
                       Text(
-                        'Synchronizing. Please keep the app open.',
+                        t.synchronizing,
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                     ],
@@ -342,7 +344,7 @@ class _ScannerPageState extends State<ScannerPage> {
                   child: FilledButton.icon(
                     onPressed: _isSyncing ? null : _toggleScanning,
                     icon: Icon(_isScanning ? Icons.stop : Icons.camera_alt),
-                    label: Text(_isScanning ? 'Stop scanning' : 'Scan'),
+                    label: Text(_isScanning ? t.stopScanning : t.scan),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -355,8 +357,8 @@ class _ScannerPageState extends State<ScannerPage> {
                     padding: const EdgeInsets.all(12),
                     child: Text(
                       _isScanning
-                          ? 'Hold the barcode steady.'
-                          : 'Tap Scan when you are ready.',
+                          ? t.holdBarcodeSteady
+                          : t.tapScanWhenReady,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white),
                     ),

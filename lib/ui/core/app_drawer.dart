@@ -4,7 +4,10 @@ import 'package:provider/provider.dart';
 import '../../data/models/auth_session.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../features/auth/login_page.dart';
+import '../../features/legal/legal_support_page.dart';
 import '../../features/scanned_products/scanned_products_page.dart';
+import '../../i18n/app_localizations.dart';
+import 'language_switcher.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
@@ -22,6 +25,8 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Drawer(
       child: SafeArea(
         child: Column(
@@ -33,19 +38,24 @@ class AppDrawer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Barscan',
+                    "Bar'scan",
                     style: Theme.of(context).textTheme.headlineSmall
                         ?.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 4),
-                  Text('${session.username} - shelf $segment'),
+                  Text(t.userShelf(session.username, segment)),
                 ],
               ),
             ),
             const Divider(height: 1),
             ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(t.languageName),
+              trailing: const LanguageSwitcher(),
+            ),
+            ListTile(
               leading: const Icon(Icons.inventory_2_outlined),
-              title: const Text('Scanned products'),
+              title: Text(t.scannedProducts),
               trailing: Text('$pendingCount'),
               onTap: () async {
                 Navigator.of(context).pop();
@@ -59,8 +69,20 @@ class AppDrawer extends StatelessWidget {
             ),
             const Spacer(),
             ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: Text(t.legalSupport),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LegalSupportPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Log out'),
+              title: Text(t.logOut),
               onTap: () async {
                 await context.read<AuthRepository>().logout();
                 if (!context.mounted) {

@@ -10,6 +10,8 @@ class AuthRepository {
     required this.secureTokenStorage,
   });
 
+  static const rememberedLoginValidity = Duration(days: 30);
+
   final AuthApiService authApiService;
   final JwtDecoderService jwtDecoderService;
   final SecureTokenStorage secureTokenStorage;
@@ -17,32 +19,48 @@ class AuthRepository {
   Future<AuthSession> login({
     required String username,
     required String password,
+    bool rememberLogin = true,
   }) async {
     final result = await authApiService.login(
       username: username,
       password: password,
     );
-    await secureTokenStorage.saveToken(result.token);
     final session = jwtDecoderService.decodeSession(result.token);
     if (session.isExpired) {
       await secureTokenStorage.clear();
       throw const ExpiredSessionException();
     }
+
+    await secureTokenStorage.saveToken(result.token);
+    if (rememberLogin) {
+      await secureTokenStorage.saveRememberedLogin(
+        username: username,
+        password: password,
+        loggedInAt: DateTime.now(),
+      );
+    }
     return session;
   }
 
   Future<AuthSession?> restoreSession() async {
-    final token = await secureTokenStorage.readToken();
-    if (token == null || token.isEmpty) {
-      return null;
-    }
-
-    final session = jwtDecoderService.decodeSession(token);
-    if (session.isExpired) {
+    final rememberedLogin = await secureTokenStorage.readRememberedLogin();
+    if (rememberedLogin == null ||
+        DateTime.now().difference(rememberedLogin.lastLoginAt) >
+            rememberedLoginValidity) {
       await secureTokenStorage.clear();
       return null;
     }
-    return session;
+
+    try {
+      return await login(
+        username: rememberedLogin.username,
+        password: rememberedLogin.password,
+        rememberLogin: false,
+      );
+    } catch (_) {
+      await secureTokenStorage.clear();
+      return null;
+    }
   }
 
   Future<void> logout() {

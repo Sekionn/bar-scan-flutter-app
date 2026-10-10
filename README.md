@@ -74,6 +74,10 @@ when adding or documenting new config keys.
 The mobile app integration follows `mobile-integration-context.md`:
 
 - Login calls `POST /auth/login` and stores the returned JWT in secure storage.
+- The app also stores the username/password in Flutter secure storage after a
+  successful manual login. For up to 30 days it silently re-authenticates on
+  startup and skips the login form if the backend accepts the saved login.
+- Logout clears the JWT and remembered login details.
 - JWT claims are decoded locally to get `userId`, `companyId`, `role`, and expiry.
 - Local scan rows include `userId` so unsynced records can be sent after app restarts.
 - Sync publishes RabbitMQ `product.created` messages to `bar-scan.products`.
@@ -133,6 +137,29 @@ C:\Users\Sjknu\flutter-sdk\flutter\bin\dart.bat format lib test
 C:\Users\Sjknu\flutter-sdk\flutter\bin\flutter.bat analyze
 C:\Users\Sjknu\flutter-sdk\flutter\bin\flutter.bat test
 ```
+
+## App Store Build Notes
+
+Release builds submitted to Apple must use public production services. Do not
+submit a build with emulator or LAN-only defaults such as `10.0.2.2`.
+
+At minimum, provide production values for:
+
+```powershell
+flutter build ipa `
+  --dart-define=BACKEND_BASE_URL=https://your-api.example `
+  --dart-define=RABBITMQ_HOST=your-rabbitmq-host.example `
+  --dart-define=RABBITMQ_PORT=5672 `
+  --dart-define=RABBITMQ_USERNAME=<production-user> `
+  --dart-define=RABBITMQ_PASSWORD=<production-password> `
+  --dart-define=PRIVACY_POLICY_URL=https://your-domain.example/privacy `
+  --dart-define=TERMS_URL=https://your-domain.example/terms `
+  --dart-define=SUPPORT_URL=https://your-domain.example/support `
+  --dart-define=SUPPORT_EMAIL=support@your-domain.example
+```
+
+Keep the backend and queue services available while Apple reviews the app, and
+create a demo scanner account assigned to a test shop.
 
 
 

@@ -6,10 +6,11 @@ import '../data/repositories/scan_repository.dart';
 import '../data/services/auth_api_service.dart';
 import '../data/services/jwt_decoder_service.dart';
 import '../data/services/product_queue_service.dart';
-import '../data/services/queue_status_api_service.dart';
 import '../data/services/scan_database_service.dart';
 import '../data/services/secure_token_storage.dart';
-import '../features/auth/login_page.dart';
+import '../data/services/sync_batch_queue_service.dart';
+import '../features/auth/auth_gate.dart';
+import '../i18n/language_controller.dart';
 
 class BarscanApp extends StatelessWidget {
   const BarscanApp({super.key});
@@ -18,6 +19,13 @@ class BarscanApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<LanguageController>(
+          create: (_) {
+            final controller = LanguageController();
+            controller.load();
+            return controller;
+          },
+        ),
         Provider<AuthRepository>(
           create: (_) => AuthRepository(
             authApiService: AuthApiService(),
@@ -29,7 +37,7 @@ class BarscanApp extends StatelessWidget {
           create: (_) => ScanRepository(
             databaseService: ScanDatabaseService.instance,
             productQueueService: ProductQueueService(),
-            queueStatusApiService: QueueStatusApiService(),
+            syncBatchQueueService: SyncBatchQueueService(),
           ),
         ),
       ],
@@ -42,7 +50,7 @@ class BarscanApp extends StatelessWidget {
           appBarTheme: const AppBarTheme(centerTitle: false),
           useMaterial3: true,
         ),
-        home: const LoginPage(),
+        home: const AuthGate(),
       ),
     );
   }

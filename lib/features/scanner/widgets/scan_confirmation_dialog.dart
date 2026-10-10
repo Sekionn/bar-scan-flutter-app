@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../data/models/scan_record.dart';
+import '../../../i18n/app_localizations.dart';
 import '../../../utils/validators.dart';
 
 class ScanConfirmationDialog extends StatefulWidget {
@@ -65,8 +66,10 @@ class _ScanConfirmationDialogState extends State<ScanConfirmationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return AlertDialog(
-      title: const Text('Confirm barcode'),
+      title: Text(t.confirmBarcode),
       content: Form(
         key: _formKey,
         child: Column(
@@ -74,23 +77,31 @@ class _ScanConfirmationDialogState extends State<ScanConfirmationDialog> {
           children: [
             TextFormField(
               controller: _barcodeController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Barcode',
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: t.barcode,
               ),
-              validator: requiredText,
+              validator: (value) => requiredText(
+                value,
+                requiredMessage: t.required,
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _numberController,
               focusNode: _numberFocusNode,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Amount counted',
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: t.amountCounted,
               ),
               keyboardType: TextInputType.number,
               onFieldSubmitted: (_) => _addRecord(),
-              validator: nonNegativeIntegerText,
+              validator: (value) => nonNegativeIntegerText(
+                value,
+                requiredMessage: t.required,
+                integerMessage: t.enterWholeNumber,
+                zeroOrHigherMessage: t.enterZeroOrHigher,
+              ),
             ),
           ],
         ),
@@ -98,12 +109,12 @@ class _ScanConfirmationDialogState extends State<ScanConfirmationDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(t.cancel),
         ),
         FilledButton.icon(
           onPressed: _addRecord,
           icon: const Icon(Icons.add),
-          label: const Text('Add'),
+          label: Text(t.add),
         ),
       ],
     );

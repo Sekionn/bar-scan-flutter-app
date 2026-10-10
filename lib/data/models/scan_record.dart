@@ -59,12 +59,14 @@ class ScanRecord {
     };
   }
 
-  Map<String, Object?> toProductCreatedEvent() {
+  Map<String, Object?> toProductCreatedEvent(String syncBatchId) {
     return {
-      'userId': userId,
       'messageId': messageId,
+      'syncBatchId': syncBatchId,
+      'userId': userId,
       'barcode': barcode,
       'shelfOfOrigin': shelfOfOrigin,
+      'storeSegment': segment,
       'amountCounted': amountCounted,
     };
   }
