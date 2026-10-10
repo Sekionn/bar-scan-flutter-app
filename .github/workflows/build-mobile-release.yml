@@ -178,8 +178,9 @@ jobs:
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" -T /usr/bin/codesign -T /usr/bin/xcodebuild -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
@@ -229,37 +230,41 @@ jobs:
           text.gsub!('"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";',
                      '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";')
 
-          ['249021D4217E4FDB00AE95B9', '97C147071CF9000F007C117D'].each do |config_id|
-            pattern = /
-              (#{Regexp.escape(config_id)}\s+\/\*.*?\*\/\s+=\s+\{.*?
-              buildSettings\s+=\s+\{\n)
-              (.*?)
-              (\n\s+\};\n\s+name\s+=\s+(?:Release|Profile);\n\s+\};)
-            /mx
+          text.gsub!(/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]"\s+=\s+"iPhone Developer";/,
+                     '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";')
 
-            text.sub!(pattern) do
-              header = Regexp.last_match(1)
-              settings = Regexp.last_match(2)
-              footer = Regexp.last_match(3)
+          updated_configs = 0
+          text.gsub!(/(\b[0-9A-F]{24}\s+\/\*.*?\*\/\s+=\s+\{.*?buildSettings\s+=\s+\{\n)(.*?)(\n\s+\};\n\s+name\s+=\s+\w+;\n\s+\};)/m) do
+            header = Regexp.last_match(1)
+            settings = Regexp.last_match(2)
+            footer = Regexp.last_match(3)
 
-              {
-                'CODE_SIGN_STYLE' => 'Manual',
-                'DEVELOPMENT_TEAM' => ENV.fetch('IOS_TEAM_ID'),
-                'PROVISIONING_PROFILE_SPECIFIER' => ENV.fetch('IOS_PROVISIONING_PROFILE_NAME')
-              }.each do |key, value|
-                if settings.match?(/^\s+#{key}\s+=\s+.*?;$/)
-                  settings.gsub!(/^\s+#{key}\s+=\s+.*?;$/, "\t\t\t\t#{key} = #{value};")
-                else
-                  settings << "\t\t\t\t#{key} = #{value};\n"
-                end
+            unless settings.include?('PRODUCT_BUNDLE_IDENTIFIER = com.juulstrinkets.barscan;')
+              next "#{header}#{settings}#{footer}"
+            end
+
+            {
+              'CODE_SIGN_STYLE' => 'Manual',
+              'DEVELOPMENT_TEAM' => ENV.fetch('IOS_TEAM_ID'),
+              'PROVISIONING_PROFILE_SPECIFIER' => ENV.fetch('IOS_PROVISIONING_PROFILE_NAME'),
+              'CODE_SIGN_IDENTITY' => '"Apple Distribution"'
+            }.each do |key, value|
+              if settings.match?(/^\s+#{Regexp.escape(key)}\s+=\s+.*?;$/)
+                settings.gsub!(/^\s+#{Regexp.escape(key)}\s+=\s+.*?;$/, "\t\t\t\t#{key} = #{value};")
+              else
+                settings << "\t\t\t\t#{key} = #{value};\n"
               end
+            end
 
-              "#{header}#{settings}#{footer}"
-            end || abort("Could not update build configuration #{config_id}")
+            updated_configs += 1
+            "#{header}#{settings}#{footer}"
           end
+
+          abort('No Runner signing configurations were updated.') if updated_configs.zero?
 
           File.write(project_path, text)
           RUBY
+          grep -n "CODE_SIGN_IDENTITY\|CODE_SIGN_STYLE\|DEVELOPMENT_TEAM\|PROVISIONING_PROFILE_SPECIFIER\|PRODUCT_BUNDLE_IDENTIFIER" ios/Runner.xcodeproj/project.pbxproj
 
       - name: Analyze
         run: flutter analyze
