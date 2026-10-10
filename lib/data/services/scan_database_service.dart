@@ -84,9 +84,14 @@ class ScanDatabaseService {
     return db.insert('scans', record.toDatabase());
   }
 
-  Future<List<ScanRecord>> records() async {
+  Future<List<ScanRecord>> records({required String userId}) async {
     final db = await database;
-    final rows = await db.query('scans', orderBy: 'created_at DESC');
+    final rows = await db.query(
+      'scans',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'created_at DESC',
+    );
     return rows.map(ScanRecord.fromDatabase).toList();
   }
 
@@ -105,9 +110,12 @@ class ScanDatabaseService {
     );
   }
 
-  Future<int> count() async {
+  Future<int> count({required String userId}) async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COUNT(*) AS total FROM scans');
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS total FROM scans WHERE user_id = ?',
+      [userId],
+    );
     return Sqflite.firstIntValue(result) ?? 0;
   }
 

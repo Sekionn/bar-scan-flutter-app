@@ -15,12 +15,14 @@ class AppDrawer extends StatelessWidget {
     required this.session,
     required this.segment,
     required this.pendingCount,
+    required this.userId,
     required this.onRecordsChanged,
   });
 
   final AuthSession session;
   final String segment;
   final int pendingCount;
+  final String userId;
   final VoidCallback onRecordsChanged;
 
   @override
@@ -61,7 +63,10 @@ class AppDrawer extends StatelessWidget {
                 Navigator.of(context).pop();
                 await Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => ScannedProductsPage(segment: segment),
+                    builder: (_) => ScannedProductsPage(
+                      segment: segment,
+                      userId: userId,
+                    ),
                   ),
                 );
                 onRecordsChanged();

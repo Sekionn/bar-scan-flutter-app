@@ -8,9 +8,14 @@ import '../../utils/date_formatters.dart';
 import '../../utils/validators.dart';
 
 class ScannedProductsPage extends StatefulWidget {
-  const ScannedProductsPage({super.key, required this.segment});
+  const ScannedProductsPage({
+    super.key,
+    required this.segment,
+    required this.userId,
+  });
 
   final String segment;
+  final String userId;
 
   @override
   State<ScannedProductsPage> createState() => _ScannedProductsPageState();
@@ -24,12 +29,12 @@ class _ScannedProductsPageState extends State<ScannedProductsPage> {
   void initState() {
     super.initState();
     _scanRepository = context.read<ScanRepository>();
-    _recordsFuture = _scanRepository.pendingScans();
+    _recordsFuture = _scanRepository.pendingScans(userId: widget.userId);
   }
 
   void _refreshRecords() {
     setState(() {
-      _recordsFuture = _scanRepository.pendingScans();
+      _recordsFuture = _scanRepository.pendingScans(userId: widget.userId);
     });
   }
 

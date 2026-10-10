@@ -65,7 +65,9 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   Future<void> _refreshPendingCount() async {
-    final count = await _scanRepository.pendingCount();
+    final count = await _scanRepository.pendingCount(
+      userId: widget.session.userId,
+    );
     if (mounted) {
       setState(() => _pendingCount = count);
     }
@@ -212,7 +214,9 @@ class _ScannerPageState extends State<ScannerPage> {
     }
 
     final t = AppLocalizations.read(context);
-    final records = await _scanRepository.pendingScans();
+    final records = await _scanRepository.pendingScans(
+      userId: widget.session.userId,
+    );
     if (records.isEmpty) {
       _showSnack(t.noProductsWaiting);
       return;
@@ -227,6 +231,7 @@ class _ScannerPageState extends State<ScannerPage> {
 
     try {
       final synced = await _scanRepository.syncPendingScans(
+        userId: widget.session.userId,
         onProgress: (synced, total) {
           if (mounted) {
             setState(() {
@@ -267,6 +272,7 @@ class _ScannerPageState extends State<ScannerPage> {
         session: widget.session,
         segment: widget.segment,
         pendingCount: _pendingCount,
+        userId: widget.session.userId,
         onRecordsChanged: _refreshPendingCount,
       ),
       appBar: AppBar(

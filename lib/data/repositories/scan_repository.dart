@@ -18,22 +18,27 @@ class ScanRepository {
     return databaseService.insert(record);
   }
 
-  Future<List<ScanRecord>> pendingScans() {
-    return databaseService.records();
+  Future<List<ScanRecord>> pendingScans({required String userId}) {
+    return databaseService.records(userId: userId);
   }
 
   Future<void> updateScan(ScanRecord record) {
     return databaseService.update(record);
   }
 
-  Future<int> pendingCount() {
-    return databaseService.count();
+  Future<int> pendingCount({required String userId}) {
+    return databaseService.count(userId: userId);
   }
 
   Future<int> syncPendingScans({
+    required String userId,
     required void Function(int synced, int total) onProgress,
   }) async {
-    final records = await databaseService.records();
+    final records = await databaseService.records(userId: userId);
+    if (records.isEmpty) {
+      return 0;
+    }
+
     final syncBatchId = ScanRecord.createMessageId();
     final publishedRecords = <ScanRecord>[];
     final unpublishedRecords = <ScanRecord>[];
@@ -41,7 +46,7 @@ class ScanRepository {
     await syncBatchQueueService.publishStarted(
       messageId: ScanRecord.createMessageId(),
       syncBatchId: syncBatchId,
-      userId: records.first.userId,
+      userId: userId,
       expectedMessageIds: records
           .map((record) => record.messageId)
           .toList(growable: false),
@@ -64,7 +69,7 @@ class ScanRepository {
       await syncBatchQueueService.publishCompleted(
         messageId: ScanRecord.createMessageId(),
         syncBatchId: syncBatchId,
-        userId: records.first.userId,
+        userId: userId,
         unpublishedMessageIds: unpublishedRecords
             .map((record) => record.messageId)
             .toList(growable: false),
