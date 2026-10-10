@@ -179,7 +179,9 @@ jobs:
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       - name: Install Apple provisioning profile
         env:
@@ -214,6 +216,50 @@ jobs:
           </dict>
           </plist>
           EOF
+
+      - name: Configure iOS signing
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          IOS_PROVISIONING_PROFILE_NAME: ${{ secrets.IOS_PROVISIONING_PROFILE_NAME }}
+        run: |
+          ruby <<'RUBY'
+          project_path = 'ios/Runner.xcodeproj/project.pbxproj'
+          text = File.read(project_path)
+
+          text.gsub!('"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";',
+                     '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";')
+
+          ['249021D4217E4FDB00AE95B9', '97C147071CF9000F007C117D'].each do |config_id|
+            pattern = /
+              (#{Regexp.escape(config_id)}\s+\/\*.*?\*\/\s+=\s+\{.*?
+              buildSettings\s+=\s+\{\n)
+              (.*?)
+              (\n\s+\};\n\s+name\s+=\s+(?:Release|Profile);\n\s+\};)
+            /mx
+
+            text.sub!(pattern) do
+              header = Regexp.last_match(1)
+              settings = Regexp.last_match(2)
+              footer = Regexp.last_match(3)
+
+              {
+                'CODE_SIGN_STYLE' => 'Manual',
+                'DEVELOPMENT_TEAM' => ENV.fetch('IOS_TEAM_ID'),
+                'PROVISIONING_PROFILE_SPECIFIER' => ENV.fetch('IOS_PROVISIONING_PROFILE_NAME')
+              }.each do |key, value|
+                if settings.match?(/^\s+#{key}\s+=\s+.*?;$/)
+                  settings.gsub!(/^\s+#{key}\s+=\s+.*?;$/, "\t\t\t\t#{key} = #{value};")
+                else
+                  settings << "\t\t\t\t#{key} = #{value};\n"
+                end
+              end
+
+              "#{header}#{settings}#{footer}"
+            end || abort("Could not update build configuration #{config_id}")
+          end
+
+          File.write(project_path, text)
+          RUBY
 
       - name: Analyze
         run: flutter analyze
