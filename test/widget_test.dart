@@ -1,11 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:barscan_app/app/barscan_app.dart';
+import 'package:barscan_app/features/auth/login_page.dart';
+import 'package:barscan_app/i18n/language_controller.dart';
+
+Widget loginTestApp() {
+  return ChangeNotifierProvider<LanguageController>(
+    create: (_) => LanguageController(),
+    child: const MaterialApp(home: LoginPage()),
+  );
+}
 
 void main() {
   testWidgets('login screen is shown first', (WidgetTester tester) async {
-    await tester.pumpWidget(const BarscanApp());
+    await tester.pumpWidget(loginTestApp());
     await tester.pumpAndSettle();
 
     expect(find.image(const AssetImage('assets/branding/app_icon.png')), findsOneWidget);
@@ -16,7 +25,7 @@ void main() {
   });
 
   testWidgets('login requires credentials', (WidgetTester tester) async {
-    await tester.pumpWidget(const BarscanApp());
+    await tester.pumpWidget(loginTestApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Log ind'));
@@ -26,7 +35,7 @@ void main() {
   });
 
   testWidgets('login language can switch to English', (WidgetTester tester) async {
-    await tester.pumpWidget(const BarscanApp());
+    await tester.pumpWidget(loginTestApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Skift til engelsk'));
