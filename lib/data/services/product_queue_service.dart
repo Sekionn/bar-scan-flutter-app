@@ -5,6 +5,7 @@ import 'package:dart_amqp/dart_amqp.dart';
 
 import '../../config/app_config.dart';
 import '../models/scan_record.dart';
+import 'product_publish_exception.dart';
 
 class ProductQueueService {
   Future<void> publishProductCreated({
@@ -60,8 +61,4 @@ class ProductQueueService {
       client.close();
     }
   }
-}
-
-class ProductPublishException implements Exception {
-  const ProductPublishException();
 }

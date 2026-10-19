@@ -280,6 +280,23 @@ jobs:
           --dart-define-from-file=$DART_DEFINE_FILE
           --export-options-plist=ios/ExportOptions.plist
 
+      - name: Find iOS IPA
+        id: ios-ipa
+        run: |
+          ipa_path=$(find build/ios/ipa -maxdepth 1 -type f -name '*.ipa' -print -quit)
+          test -n "$ipa_path"
+          echo "path=$ipa_path" >> "$GITHUB_OUTPUT"
+
+      - name: Upload iOS build to TestFlight
+        uses: apple-actions/upload-testflight-build@v5
+        with:
+          app-path: ${{ steps.ios-ipa.outputs.path }}
+          issuer-id: ${{ vars.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ vars.APPSTORE_API_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          uses-non-exempt-encryption: 'false'
+          wait-for-processing: 'true'
+
       - name: Upload iOS artifact
         uses: actions/upload-artifact@v4
         with:

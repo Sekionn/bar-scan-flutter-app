@@ -1,5 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'remembered_login.dart';
+
 class SecureTokenStorage {
   const SecureTokenStorage({FlutterSecureStorage? storage})
     : _storage = storage ?? const FlutterSecureStorage();
@@ -63,16 +65,4 @@ class SecureTokenStorage {
       _storage.delete(key: _lastLoginAtKey),
     ]);
   }
-}
-
-class RememberedLogin {
-  const RememberedLogin({
-    required this.username,
-    required this.password,
-    required this.lastLoginAt,
-  });
-
-  final String username;
-  final String password;
-  final DateTime lastLoginAt;
 }

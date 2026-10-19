@@ -2,6 +2,7 @@ import '../models/auth_session.dart';
 import '../services/auth_api_service.dart';
 import '../services/jwt_decoder_service.dart';
 import '../services/secure_token_storage.dart';
+import 'expired_session_exception.dart';
 
 class AuthRepository {
   const AuthRepository({
@@ -66,8 +67,4 @@ class AuthRepository {
   Future<void> logout() {
     return secureTokenStorage.clear();
   }
-}
-
-class ExpiredSessionException implements Exception {
-  const ExpiredSessionException();
 }

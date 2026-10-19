@@ -2,6 +2,7 @@ import '../models/scan_record.dart';
 import '../services/product_queue_service.dart';
 import '../services/scan_database_service.dart';
 import '../services/sync_batch_queue_service.dart';
+import 'product_sync_partial_failure.dart';
 
 class ScanRepository {
   const ScanRepository({
@@ -95,14 +96,4 @@ class ScanRepository {
       await databaseService.delete(record.id!);
     }
   }
-}
-
-class ProductSyncPartialFailure implements Exception {
-  const ProductSyncPartialFailure({
-    required this.publishedCount,
-    required this.unpublishedCount,
-  });
-
-  final int publishedCount;
-  final int unpublishedCount;
 }

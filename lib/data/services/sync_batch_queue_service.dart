@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:dart_amqp/dart_amqp.dart';
 
 import '../../config/app_config.dart';
+import 'sync_batch_publish_exception.dart';
 
 class SyncBatchQueueService {
   Future<void> publishStarted({
@@ -92,8 +93,4 @@ class SyncBatchQueueService {
       client.close();
     }
   }
-}
-
-class SyncBatchPublishException implements Exception {
-  const SyncBatchPublishException();
 }

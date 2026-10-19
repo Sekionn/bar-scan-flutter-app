@@ -68,12 +68,11 @@ class AppLocalizations {
   );
   String contact(String value) => _text('Kontakt $value', 'Contact $value');
   String get storeSegment => _text('Butikssegment', 'Store segment');
-  String get chooseShelf => _text('Vælg hyldenummer', 'Choose the shelf number');
-  String get shelfSentAsOrigin => _text(
-    'Denne værdi sendes som shelfOfOrigin.',
-    'This value is sent as shelfOfOrigin.',
+  String get chooseShelf => _text(
+    'Vælg den butikssektion, du vil scanne.',
+    'Choose the store section you want to scan.',
   );
-  String get shelfNumber => _text('Hyldenummer', 'Shelf number');
+  String get shelfNumber => _text('Butikssektion', 'Store section');
   String get startScanning => _text('Start scanning', 'Start scanning');
   String shelf(String segment) => _text('Hylde $segment', 'Shelf $segment');
   String userShelf(String username, String segment) =>
