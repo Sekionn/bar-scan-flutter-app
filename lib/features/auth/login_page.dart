@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../data/repositories/auth_repository.dart';
 import '../../data/services/auth_request_exception.dart';
-import '../../data/services/auth_api_service.dart';
 import '../../data/services/invalid_credentials_exception.dart';
 import '../../i18n/app_localizations.dart';
 import '../../ui/core/language_switcher.dart';

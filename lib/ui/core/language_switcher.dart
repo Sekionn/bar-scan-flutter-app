@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../i18n/app_language.dart';
 import '../../i18n/app_localizations.dart';
 import '../../i18n/language_controller.dart';
 import 'flag_icon.dart';
