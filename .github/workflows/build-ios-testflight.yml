@@ -1,4 +1,4 @@
-name: Build Mobile Release
+name: Build iOS TestFlight Release
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
       - pubspec.yaml
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   DART_DEFINE_FILE: env/ci.json
@@ -21,14 +21,13 @@ jobs:
     name: Validate release version
     runs-on: ubuntu-latest
     outputs:
-      app_version: ${{ steps.version.outputs.app_version }}
-      release_tag: ${{ steps.version.outputs.release_tag }}
+      build_number: ${{ steps.version.outputs.build_number }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Validate version
         id: version
@@ -61,78 +60,17 @@ jobs:
               if release_name != current_name:
                   print(f'Release tag {ref_name} does not match pubspec version {current_name}.')
                   sys.exit(1)
-          elif ref_type == 'branch':
+          elif ref_type == 'branch' and os.environ['GITHUB_EVENT_NAME'] != 'workflow_dispatch':
               previous_text = subprocess.check_output(['git', 'show', 'HEAD^:pubspec.yaml'], text=True)
               previous = read_version(previous_text)
               if comparable(current) <= comparable(previous):
                   print(f'pubspec.yaml version must increase for a release build. Previous: {previous}, current: {current}.')
                   sys.exit(1)
-              print(f'pubspec.yaml version increased from {previous} to {current}.')
 
+          build_number = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], text=True).strip()
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(f'app_version={current}\n')
-              output.write(f'release_tag=v{current_name}\n')
+              output.write(f'build_number={build_number}\n')
           PY
-
-  build-android:
-    name: Build Android release APK
-    runs-on: ubuntu-latest
-    needs: validate-release
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Create Dart define file
-        run: |
-          mkdir -p env
-          cat > $DART_DEFINE_FILE <<EOF
-          {
-            "BACKEND_BASE_URL": "${{ secrets.BACKEND_BASE_URL }}",
-            "RABBITMQ_HOST": "${{ secrets.RABBITMQ_HOST }}",
-            "RABBITMQ_PORT": ${{ secrets.RABBITMQ_PORT }},
-            "RABBITMQ_USERNAME": "${{ secrets.RABBITMQ_USERNAME }}",
-            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}"
-          }
-          EOF
-
-      - name: Create Android signing files
-        run: |
-          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          cat > android/key.properties <<EOF
-          storeFile=upload-keystore.jks
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          EOF
-
-      - name: Analyze
-        run: flutter analyze
-
-      - name: Test
-        run: flutter test
-
-      - name: Build release APK
-        run: >
-          flutter build apk
-          --release
-          --build-number=${{ github.run_number }}
-          --dart-define-from-file=$DART_DEFINE_FILE
-
-      - name: Upload Android artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: barscan-android-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
 
   build-ios:
     name: Build iOS release IPA
@@ -276,7 +214,7 @@ jobs:
         run: >
           flutter build ipa
           --release
-          --build-number=${{ github.run_number }}
+          --build-number=${{ needs.validate-release.outputs.build_number }}
           --dart-define-from-file=$DART_DEFINE_FILE
           --export-options-plist=ios/ExportOptions.plist
 
@@ -302,35 +240,4 @@ jobs:
         with:
           name: barscan-ios-release-ipa
           path: build/ios/ipa/*.ipa
-
-  publish-release:
-    name: Publish GitHub release
-    runs-on: ubuntu-latest
-    needs:
-      - validate-release
-      - build-android
-      - build-ios
-    if: >
-      always() &&
-      needs.validate-release.result == 'success' &&
-      (needs.build-android.result == 'success' || needs.build-ios.result == 'success')
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release-assets
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.validate-release.outputs.release_tag }}
-          name: Barscan ${{ needs.validate-release.outputs.app_version }}
-          target_commitish: ${{ github.sha }}
-          generate_release_notes: true
-          fail_on_unmatched_files: false
-          files: |
-            release-assets/**/*.apk
-            release-assets/**/*.ipa
-
-
+          if-no-files-found: error

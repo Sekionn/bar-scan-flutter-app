@@ -1,0 +1,134 @@
+name: Build Android Google Play Bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+    paths:
+      - pubspec.yaml
+
+permissions:
+  contents: read
+
+env:
+  DART_DEFINE_FILE: env/ci.json
+
+jobs:
+  validate-release:
+    name: Validate release version
+    runs-on: ubuntu-latest
+    outputs:
+      build_number: ${{ steps.version.outputs.build_number }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version
+        id: version
+        run: |
+          python3 <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          def read_version(text):
+              match = re.search(r'^version:\s*([^\s]+)', text, re.MULTILINE)
+              if not match:
+                  raise SystemExit('No version found in pubspec.yaml.')
+              return match.group(1)
+
+          def comparable(version):
+              name, _, build = version.partition('+')
+              parts = tuple(int(part) for part in name.split('.'))
+              build_number = int(build) if build.isdigit() else 0
+              return (*parts, build_number)
+
+          current = read_version(open('pubspec.yaml', encoding='utf-8').read())
+          current_name = current.split('+', 1)[0]
+          ref_type = os.environ['GITHUB_REF_TYPE']
+          ref_name = os.environ['GITHUB_REF_NAME']
+
+          if ref_type == 'tag':
+              release_name = ref_name[1:] if ref_name.startswith('v') else ref_name
+              if release_name != current_name:
+                  print(f'Release tag {ref_name} does not match pubspec version {current_name}.')
+                  sys.exit(1)
+          elif ref_type == 'branch' and os.environ['GITHUB_EVENT_NAME'] != 'workflow_dispatch':
+              previous_text = subprocess.check_output(['git', 'show', 'HEAD^:pubspec.yaml'], text=True)
+              previous = read_version(previous_text)
+              if comparable(current) <= comparable(previous):
+                  print(f'pubspec.yaml version must increase for a release build. Previous: {previous}, current: {current}.')
+                  sys.exit(1)
+
+          build_number = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], text=True).strip()
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'build_number={build_number}\n')
+          PY
+
+  build-android:
+    name: Build Android release app bundle
+    runs-on: ubuntu-latest
+    needs: validate-release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create Dart define file
+        run: |
+          mkdir -p env
+          cat > $DART_DEFINE_FILE <<EOF
+          {
+            "BACKEND_BASE_URL": "${{ secrets.BACKEND_BASE_URL }}",
+            "RABBITMQ_HOST": "${{ secrets.RABBITMQ_HOST }}",
+            "RABBITMQ_PORT": ${{ secrets.RABBITMQ_PORT }},
+            "RABBITMQ_USERNAME": "${{ secrets.RABBITMQ_USERNAME }}",
+            "RABBITMQ_PASSWORD": "${{ secrets.RABBITMQ_PASSWORD }}"
+          }
+          EOF
+
+      - name: Create Android signing files
+        run: |
+          echo -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build release app bundle
+        run: >
+          flutter build appbundle
+          --release
+          --build-number=${{ needs.validate-release.outputs.build_number }}
+          --dart-define-from-file=$DART_DEFINE_FILE
+
+      - name: Upload Android app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: barscan-android-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
