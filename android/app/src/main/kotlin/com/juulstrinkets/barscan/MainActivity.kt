@@ -1,4 +1,4 @@
-package com.example.barscan_app
+package com.juulstrinkets.barscan
 
 import io.flutter.embedding.android.FlutterActivity
 
